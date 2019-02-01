@@ -4,25 +4,19 @@ from __future__ import absolute_import, division, print_function
 
 import itertools
 import json
-import numpy as np
-import os
-import pandas
-import progressbar
-import sys
-import tables
-import tensorflow as tf
+from multiprocessing import cpu_count
 
+import numpy as np
+import progressbar
+import tensorflow as tf
 from attrdict import AttrDict
-from collections import namedtuple
-from ds_ctcdecoder import ctc_beam_search_decoder_batch, Scorer
-from multiprocessing import Pool, cpu_count
 from six.moves import zip, range
-from util.audio import audiofile_to_input_vector
+
 from util.config import Config, initialize_globals
 from util.flags import create_flags, FLAGS
 from util.logging import log_error
 from util.preprocess import pmap, preprocess
-from util.text import Alphabet, ctc_label_dense_to_sparse, wer, levenshtein
+from util.text import ctc_label_dense_to_sparse, wer, levenshtein
 
 
 def split_data(dataset, batch_size):

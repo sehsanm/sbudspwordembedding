@@ -1,7 +1,6 @@
 import numpy as np
 import os
 import pandas
-import tables
 
 from functools import partial
 from multiprocessing.dummy import Pool

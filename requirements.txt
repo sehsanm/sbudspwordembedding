@@ -1,3 +1,4 @@
+webrtcvad
 pandas
 progressbar2
 python-utils
@@ -17,3 +18,5 @@ attrdict
 setuptools
 librosa
 soundfile
+deepspeech
+

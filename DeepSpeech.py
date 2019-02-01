@@ -16,9 +16,7 @@ import tempfile
 import tensorflow as tf
 import traceback
 
-from ds_ctcdecoder import ctc_beam_search_decoder, Scorer
 from six.moves import zip, range
-from tensorflow.contrib.lite.python import tflite_convert
 from tensorflow.python.tools import freeze_graph
 from util.audio import audiofile_to_input_vector
 from util.config import Config, initialize_globals
@@ -874,12 +872,7 @@ def do_single_file_inference(input_file_path):
 
         logits = np.squeeze(logits)
 
-        scorer = Scorer(FLAGS.lm_alpha, FLAGS.lm_beta,
-                        FLAGS.lm_binary_path, FLAGS.lm_trie_path,
-                        Config.alphabet)
-        decoded = ctc_beam_search_decoder(logits, Config.alphabet, FLAGS.beam_width, scorer=scorer)
-        # Print highest probability result
-        print(decoded[0][1])
+        print(logits)
 
 
 def main(_):
@@ -938,4 +931,6 @@ def main(_):
 
 if __name__ == '__main__' :
     create_flags()
-    tf.app.run(main)
+    initialize_globals()
+    FLAGS.checkpoint_dir = './data/checkpoint'
+    do_single_file_inference('./data/audio/2830-3980-0043.wav')
