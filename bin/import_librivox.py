@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 # This script needs to be run from the root of the DeepSpeech repository
 import sys
 import os
+
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
 import codecs
@@ -18,6 +19,7 @@ import unicodedata
 from sox import Transformer
 from util.downloader import maybe_download
 from tensorflow.python.platform import gfile
+
 
 def _download_and_preprocess_data(data_dir):
     # Conditionally download data to data_dir
@@ -34,6 +36,7 @@ def _download_and_preprocess_data(data_dir):
         TEST_OTHER_URL = "http://www.openslr.org/resources/12/test-other.tar.gz"
 
         def filename_of(x): return os.path.split(x)[1]
+
         train_clean_100 = maybe_download(filename_of(TRAIN_CLEAN_100_URL), data_dir, TRAIN_CLEAN_100_URL)
         bar.update(0)
         train_clean_360 = maybe_download(filename_of(TRAIN_CLEAN_360_URL), data_dir, TRAIN_CLEAN_360_URL)
@@ -89,7 +92,7 @@ def _download_and_preprocess_data(data_dir):
     #  data_dir/LibriSpeech/split-wav/1-2-2.txt
     #  ...
     print("Converting FLAC to WAV and splitting transcriptions...")
-    with progressbar.ProgressBar(max_value=7,  widget=progressbar.AdaptiveETA) as bar:
+    with progressbar.ProgressBar(max_value=7, widget=progressbar.AdaptiveETA) as bar:
         train_100 = _convert_audio_and_split_sentences(work_dir, "train-clean-100", "train-clean-100-wav")
         bar.update(0)
         train_360 = _convert_audio_and_split_sentences(work_dir, "train-clean-360", "train-clean-360-wav")
@@ -118,12 +121,14 @@ def _download_and_preprocess_data(data_dir):
     test_clean.to_csv(os.path.join(data_dir, "librivox-test-clean.csv"), index=False)
     test_other.to_csv(os.path.join(data_dir, "librivox-test-other.csv"), index=False)
 
+
 def _maybe_extract(data_dir, extracted_data, archive):
     # If data_dir/extracted_data does not exist, extract archive in data_dir
     if not gfile.Exists(os.path.join(data_dir, extracted_data)):
         tar = tarfile.open(archive)
         tar.extractall(data_dir)
         tar.close()
+
 
 def _convert_audio_and_split_sentences(extracted_dir, data_set, dest_dir):
     source_dir = os.path.join(extracted_dir, data_set)
@@ -153,14 +158,14 @@ def _convert_audio_and_split_sentences(extracted_dir, data_set, dest_dir):
                 for line in fin:
                     # Parse each segment line
                     first_space = line.find(" ")
-                    seqid, transcript = line[:first_space], line[first_space+1:]
+                    seqid, transcript = line[:first_space], line[first_space + 1:]
 
                     # We need to do the encode-decode dance here because encode
                     # returns a bytes() object on Python 3, and text_to_char_array
                     # expects a string.
-                    transcript = unicodedata.normalize("NFKD", transcript)  \
-                                            .encode("ascii", "ignore")      \
-                                            .decode("ascii", "ignore")
+                    transcript = unicodedata.normalize("NFKD", transcript) \
+                        .encode("ascii", "ignore") \
+                        .decode("ascii", "ignore")
 
                     transcript = transcript.lower().strip()
 
@@ -175,5 +180,12 @@ def _convert_audio_and_split_sentences(extracted_dir, data_set, dest_dir):
 
     return pandas.DataFrame(data=files, columns=["wav_filename", "wav_filesize", "transcript"])
 
+
 if __name__ == "__main__":
-    _download_and_preprocess_data(sys.argv[1])
+    # _download_and_preprocess_data(sys.argv[1])
+    extracted_dir = '../../LibriSpeech'
+    data_dir = 'dev-clean'
+    dest_dir = 'dev-clean-converted'
+    data_set = _convert_audio_and_split_sentences(extracted_dir, data_dir, dest_dir)
+    data_set.to_csv(os.path.join(extracted_dir,  'dev-clean.csv'), index=False)
+

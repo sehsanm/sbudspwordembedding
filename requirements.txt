@@ -18,5 +18,5 @@ attrdict
 setuptools
 librosa
 soundfile
-deepspeech
+
 
