@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, print_function
 
 import csv
+import os
 
 import numpy as np
 import pandas
@@ -54,16 +55,22 @@ def reshape_output(row, output_chunk_number):
     for i in range(0, orig_chunck_count):
         if len(output) >= output_chunk_number:
             break
+        chunk = data[(i * 29):(i * 29 + 29)]
+
+        if(np.argmax(chunk) == 0):
+            skipped_chunks = skipped_chunks + 1
+            continue
 
         if i == 0 or (i < len(det_word) and det_word[i] != det_word[i - 1]) or (
                 orig_chunck_count - skipped_chunks) <= output_chunk_number:
-            output.append(data[(i * 29):(i * 29 + 29)])
+            output.append(chunk)
         else:
             skipped_chunks = skipped_chunks + 1
 
     while len(output) < output_chunk_number:
         output.append(padding)
-
+    alpha,logit = get_alphabet_from_logits(output, Config.alphabet )
+    print('>' + alpha + '<')
     return output
 
 
@@ -85,15 +92,23 @@ def load_inputs(input_file, index_file, output_chunk_number):
     return inputs, outputs
 
 
-def train():
+def train_and_test(use_old_model = True):
     inputs, outputs = load_inputs('./data/logit.csv', './data/lngrams.txt', 10)
+    weights_file = './weights.dat'
     np_inputs = np.array(inputs)
     np_outputs = [np.array(o) for  o in outputs]
     graph = create_embedding_graph(len(inputs[0]), 10, 29)
-    graph.fit(np_inputs, np_outputs, epochs=10, steps_per_epoch=20)
+    if (os.path.isfile(weights_file + '.index') and use_old_model):
+        graph.load_weights(weights_file)
+    else:
+        graph.fit(np_inputs, np_outputs, epochs=1, steps_per_epoch=20)
+        graph.save_weights(weights_file)
+
     result = graph.predict(np_inputs)
-    for r in result:
-        alpha, logits = get_alphabet_from_logits(r, Config.alphabet)
+    for i in range(len(inputs)):
+        tmp = [result[j][i] for j in range(10)]
+
+        alpha, logits = get_alphabet_from_logits(tmp, Config.alphabet)
         print(alpha)
 
 
@@ -225,7 +240,7 @@ def train_model():
     create_flags()
     initialize_globals()
     # prepare_data()
-    train()
+    train_and_test()
 
 
 if __name__ == '__main__':
