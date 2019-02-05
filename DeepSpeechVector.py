@@ -3,33 +3,102 @@
 from __future__ import absolute_import, division, print_function
 
 import csv
-import os
-import sys
 
-import pandas
-
-
-import evaluate
 import numpy as np
+import pandas
 import tensorflow as tf
-
 from six.moves import range
+from util.config import Config, initialize_globals
+
+from DeepSpeech import create_inference_graph
+from util import letters
 from util.audio import audiofile_to_input_vector
 from util.config import Config, initialize_globals
 from util.flags import create_flags, FLAGS
-from util.logging import log_error
-from util.preprocess import preprocess
 from util.lcs import longest_common_subsequence_general
-
-from DeepSpeech import create_inference_graph
-
-# Logging
-# =======
+from util.logging import log_error
 
 
+def create_embedding_graph(input_vec_size, output_count, output_size, embedding_dim=300):
+    inputs = tf.keras.Input(shape=(input_vec_size,))
+    embedding = tf.keras.layers.Dense(embedding_dim, activation='relu')(inputs)
+    outputs = []
+    for i in range(0, output_count):
+        outputs.append(tf.layers.Dense(output_size, activation='softmax')(embedding))
+    model = tf.keras.Model(inputs=inputs, outputs=outputs)
+    model.compile(optimizer=tf.train.AdamOptimizer(0.01),
+                  loss='mse',
+                  metrics=['mse'])
+
+    return model
 
 
+def reshape_output(row, output_chunk_number):
+    # based on alphabet size 28 + 1 (no activity)
+    chunk_size = 29
+    # Padding default
+    padding = [0] * chunk_size
+    padding[chunk_size - 1] = 1
 
+    word = row[0]
+    num_chunks = int(row[1])
+    det_word = row[2]
+    data = []
+    for i in range(3, len(row)):
+        data.append(float(row[i]))
+    orig_chunck_count = int(len(data) / chunk_size)
+    output = []
+
+    # first step skipp the reapeated  charachters
+    skipped_chunks = 0
+    for i in range(0, orig_chunck_count):
+        if len(output) >= output_chunk_number:
+            break
+
+        if i == 0 or (i < len(det_word) and det_word[i] != det_word[i - 1]) or (
+                orig_chunck_count - skipped_chunks) <= output_chunk_number:
+            output.append(data[(i * 29):(i * 29 + 29)])
+        else:
+            skipped_chunks = skipped_chunks + 1
+
+    while len(output) < output_chunk_number:
+        output.append(padding)
+
+    return output
+
+
+def load_inputs(input_file, index_file, output_chunk_number):
+    print('Loading input data')
+    outputs = [[] for i in range(output_chunk_number)]
+    inputs = []
+
+    letter_index = letters.load_index(index_file)
+
+    with open(input_file, 'r') as input:
+        input_csv = csv.reader(input)
+        for row in input_csv:
+            data = letters.word_to_feature(row[0], letter_index)
+            output = reshape_output(row, output_chunk_number)
+            inputs.append(data)
+            for i in range(0, output_chunk_number):
+                outputs[i].append(output[i])
+    return inputs, outputs
+
+
+def train():
+    inputs, outputs = load_inputs('./data/logit.csv', './data/lngrams.txt', 10)
+    np_inputs = np.array(inputs)
+    np_outputs = [np.array(o) for  o in outputs]
+    graph = create_embedding_graph(len(inputs[0]), 10, 29)
+    graph.fit(np_inputs, np_outputs, epochs=10, steps_per_epoch=20)
+    result = graph.predict(np_inputs)
+    for r in result:
+        alpha, logits = get_alphabet_from_logits(r, Config.alphabet)
+        print(alpha)
+
+
+def evaluate(graph, inputs):
+    result = graph.predict(inputs)
 
 
 def do_single_file_inference(input_file_path):
@@ -142,10 +211,23 @@ def match_transcripts(original_trans, detected_trans):
     return ret
 
 
-
-if __name__ == '__main__':
+def prepare_data():
+    global FLAGS
     create_flags()
     initialize_globals()
     FLAGS.checkpoint_dir = './data/checkpoint'
     # do_single_file_inference('./data/audio/2830-3980-0043.wav')
-    do_batch_file_inference('../LibriSpeech/dev-clean.csv', 'logit.csv' )
+    do_batch_file_inference('../LibriSpeech/dev-clean.csv', 'logit.csv')
+
+
+def train_model():
+    global FLAGS
+    create_flags()
+    initialize_globals()
+    # prepare_data()
+    train()
+
+
+if __name__ == '__main__':
+    train_model()
+    # prepare_data()
