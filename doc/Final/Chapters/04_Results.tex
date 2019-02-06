@@ -1,0 +1,74 @@
+The embedding network  training was straight forward and the network looked to have a  normal errors drop rate. One of the interesting points about training was that the first output layer was the hardest one to train. The other $N-1$ output layers error was very low initially but the first output layer error level dropped very late. 
+
+\subsection{Auto-Encoder Performance}
+One of the aspects of the auto-encoder is that it supposed to generate the sound probabilities from the letter-n-grams.  here are some sample output of the network. We are comparing the output of the RNN, Original word and output of embedding network. 
+\begin{table}
+    \centering
+    \begin{tabular}{|c | c | c |}
+        \hline
+        Original Input &  Embedding Network Output & RNN Output \\
+        \hline 
+        arcturus & arrctoris & arrctoris \\ 
+        steadfast & steaddastt & ssteeadfastt \\ 
+        in & in & an \\ 
+        the & the & a \\ 
+        skies & ssskiees & ssskkiees \\ 
+        with & witth & with \\ 
+        tardy & tarrt & tarrty \\ 
+        sense & sensse & sensse \\ 
+        guidest & guuiidest & guuiidest \\ 
+        thy & thi & by \\ 
+        kingdom & cingddoo & kinggddom \\ 
+        fair & fairr & farr \\ 
+        bearing & bearing & bearing \\ 
+        alone & alone & alone \\ 
+        the & the & theyh \\ 
+        load & lloadd & lloadd \\ 
+        of & of & of \\ 
+        liberty & llleerrtty & libeerrtty \\
+        \hline         
+    \end{tabular}
+
+    \caption{Sample outputs from RNN and Embedding Network}
+\end{table}
+
+In general it looks that embedding network output is something between what RNN produces and the original word. To assess this we have calculated the sum of Levenstein distance of the words. Here you can see the result: 
+\begin{table}
+    \centering
+    \begin{tabular}{|l | l | c |}
+        \hline
+        RNN Output &  Original Word & 72029 \\
+        \hline
+        RNN Output & Embedding Output & 58986 \\
+        \hline
+        Original Word & Embedding Output & 59535 \\ 
+        \hline
+    \end{tabular}
+    \caption{Levenstein distance between outputs}
+\end{table}
+
+\subsection{Word Level Similarities} 
+
+After embedding model is built, now it's the time to explore the similarities from this model. For this purpose, Cosine similarity measure is used. 
+\begin{table}
+    \centering
+    \begin{tabular}{|l | c| c |c |c |c |}
+        \hline
+        Word & Neighbour 1 & Neighbour 2 & Neighbour 3 & Neighbour  4 & Neighbour 5 \\
+        \hline
+        wheel & wheel & heel & wheels & while & when the\\
+        \hline
+        buy & but & by & but it & bye & be\\
+        \hline
+        heart & heart & hearth & hear & heart's & her at\\
+        \hline
+        please & please & pleases & pleased & pleasure & release\\
+        \hline
+        plug & plot & plumb & plan & play & plague\\
+        \hline
+        chareety & charity & charge & chat & cheatham & share\\
+        \hline
+        
+    \end{tabular}
+    \caption{Similar words in embedding space}
+\end{table}

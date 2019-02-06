@@ -1,0 +1,130 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ELEE	3720 Electromechanical Energy Conversion: Report template
+% By Ratheesh Ravindran
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[12pt]{article}
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\graphicspath{{Images/}}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage{hyperref}
+ 
+\usepackage{listings}
+\usepackage{color}
+ 
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+ 
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+ 
+\lstset{style=mystyle}
+
+%\usepackage{fancyhdr}
+%\pagestyle{fancy} 
+\begin{document}
+\begin{titlepage}
+\newcommand{\HRule}{\rule{\linewidth}{0.1mm}} 
+\center % Centre everything on the page
+ 
+%---------------------------------------------------------------------------------
+%	HEADING SECTIONS (Enter the Homework/assignment No., only)
+%---------------------------------------------------------------------------------
+\textsc{\Large Digital Speech Processing}\\[0.5cm] % heading course Number
+\textsc{\large Final Term Project }\\[0.5cm] % Minor heading
+%---------------------------------------------------------------------------------
+%	TITLE SECTION (Replace 'TITLE' with the Homework/assignment Name/title)
+%---------------------------------------------------------------------------------
+
+\HRule \\[0.4cm]
+{ \huge \bfseries Word Embedding in Speech}\\[0.1cm] % Title of your Homework/assignment
+\HRule \\[1.5cm]
+ 
+%---------------------------------------------------------------------------------
+%	AUTHOR SECTION (EDIT THE NAME and T.NO., only)
+%---------------------------------------------------------------------------------
+
+\begin{minipage}{0.4\textwidth}
+\begin{flushleft} \large
+
+\emph{Author  :}\\
+Ehsan Mahmoudi \\97543012  % Enter Your name and T.No.
+\end{flushleft}
+
+
+
+
+\end{minipage}
+\begin{minipage}{0.4\textwidth}
+\begin{flushright} \large
+\emph{Instructor:} \\
+Dr.Yasser Shekofteh 
+\end{flushright}
+\end{minipage}\\[1cm]
+{\large \today}\\[1cm] % Date, change the \today to a set date if you want to be precise
+\includegraphics{Images/logo.png}% \\[0.5cm] % 
+\vfill % Fill the rest of the page with white-space
+
+\end{titlepage}
+\tableofcontents          % Required
+\listoffigures
+\listoftables
+\newpage
+
+% Do not edit the below sections, enter all details in respective chapters
+% Add the images/screen-shorts to the image folder and insert them in the respective chapters
+\section{Abstract}
+\input{Chapters/01_Abstract}
+
+\section{Introduction}
+\input{Chapters/02_Introduction}
+
+\section{Methodology}
+\input{Chapters/03_Methodology_Algorithm_Theory}
+
+\section{Results}
+\input{Chapters/04_Results}
+
+\section{Discussions and Conclusion}
+\input{Chapters/05_DiscussionsConclusion}
+
+\bibliographystyle{plain}
+\bibliography{Bibliography.bib}
+
+\appendix
+\section{Appendix}
+\input{Chapters/06_Appendix1}
+
+
+%---------------------------------------------------------------------------------
+%	Example SECTION (Remove this section to finalize the report.
+
+
+%\section{Example steps}
+%\input{Chapters/Example} % Remove this line to finalize the report.
+%---------------------------------------------------------------------------------
+
+
+\end{document}
+
+
