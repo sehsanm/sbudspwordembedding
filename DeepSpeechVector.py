@@ -278,7 +278,7 @@ def train_model():
     initialize_globals()
     # prepare_data()
     embedd_graph, embedd_result, words = train_and_test()
-    test_words = ['wheel' , 'buy', 'heart', 'please' , 'plug' , 'chareety']
+    test_words = ['wheel' , 'buy', 'heart', 'please' , 'plug' , 'chareety' , 'ehsan']
     index_model = letters.load_index('./data/lngrams.txt')
 
     for tw in test_words:
