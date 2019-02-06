@@ -4,11 +4,14 @@ from __future__ import absolute_import, division, print_function
 
 import csv
 import os
+import scipy
 
 import numpy as np
 import pandas
 import tensorflow as tf
 from six.moves import range
+from tensorflow.python.keras.utils.conv_utils import conv_output_shape
+
 from util.config import Config, initialize_globals
 
 from DeepSpeech import create_inference_graph
@@ -18,6 +21,9 @@ from util.config import Config, initialize_globals
 from util.flags import create_flags, FLAGS
 from util.lcs import longest_common_subsequence_general
 from util.logging import log_error
+from util.text import levenshtein
+
+MAX_DIM = 10
 
 
 def create_embedding_graph(input_vec_size, output_count, output_size, embedding_dim=300):
@@ -34,9 +40,16 @@ def create_embedding_graph(input_vec_size, output_count, output_size, embedding_
     return model
 
 
+def extract_embedding_part (orig_graph,input_vec_size , embedding_dim = 300):
+    embedding_input = tf.keras.Input(shape=(input_vec_size,))
+    embedding_layer = tf.keras.layers.Dense(embedding_dim, activation='relu' , weights=orig_graph.layers[1].get_weights())(embedding_input)
+    model = tf.keras.Model(inputs=embedding_input,  outputs=embedding_layer)
+    return model
+
+
 def reshape_output(row, output_chunk_number):
     # based on alphabet size 28 + 1 (no activity)
-    chunk_size = 29
+    chunk_size = Config.alphabet.size() + 1
     # Padding default
     padding = [0] * chunk_size
     padding[chunk_size - 1] = 1
@@ -55,7 +68,7 @@ def reshape_output(row, output_chunk_number):
     for i in range(0, orig_chunck_count):
         if len(output) >= output_chunk_number:
             break
-        chunk = data[(i * 29):(i * 29 + 29)]
+        chunk = data[(i * chunk_size):((i + 1) * chunk_size )]
 
         if(np.argmax(chunk) == 0):
             skipped_chunks = skipped_chunks + 1
@@ -69,8 +82,6 @@ def reshape_output(row, output_chunk_number):
 
     while len(output) < output_chunk_number:
         output.append(padding)
-    alpha,logit = get_alphabet_from_logits(output, Config.alphabet )
-    print('>' + alpha + '<')
     return output
 
 
@@ -78,7 +89,8 @@ def load_inputs(input_file, index_file, output_chunk_number):
     print('Loading input data')
     outputs = [[] for i in range(output_chunk_number)]
     inputs = []
-
+    words = []
+    net_words = []
     letter_index = letters.load_index(index_file)
 
     with open(input_file, 'r') as input:
@@ -87,33 +99,58 @@ def load_inputs(input_file, index_file, output_chunk_number):
             data = letters.word_to_feature(row[0], letter_index)
             output = reshape_output(row, output_chunk_number)
             inputs.append(data)
+            words.append(row[0])
+            net_words.append(row[2])
             for i in range(0, output_chunk_number):
                 outputs[i].append(output[i])
-    return inputs, outputs
+    return inputs, outputs, words, net_words
 
 
 def train_and_test(use_old_model = True):
-    inputs, outputs = load_inputs('./data/logit.csv', './data/lngrams.txt', 10)
+
+    inputs, outputs, words, net_words = load_inputs('./data/logit.csv', './data/lngrams.txt', MAX_DIM)
     weights_file = './weights.dat'
     np_inputs = np.array(inputs)
     np_outputs = [np.array(o) for  o in outputs]
-    graph = create_embedding_graph(len(inputs[0]), 10, 29)
+    graph = create_embedding_graph(len(inputs[0]), MAX_DIM, Config.alphabet.size() + 1)
+
     if (os.path.isfile(weights_file + '.index') and use_old_model):
         graph.load_weights(weights_file)
     else:
-        graph.fit(np_inputs, np_outputs, epochs=1, steps_per_epoch=20)
+        graph.fit(np_inputs, np_outputs, epochs=20, steps_per_epoch=20)
         graph.save_weights(weights_file)
 
+    embedd_graph = extract_embedding_part(graph, len(inputs[0]))
+
     result = graph.predict(np_inputs)
+    embedd_result = embedd_graph.predict(np_inputs)
+
+    word_alpha_leven = 0
+    alpha_net_leven = 0
+    word_net_leven = 0
     for i in range(len(inputs)):
-        tmp = [result[j][i] for j in range(10)]
-
+        tmp = [result[j][i] for j in range(MAX_DIM)]
         alpha, logits = get_alphabet_from_logits(tmp, Config.alphabet)
-        print(alpha)
+        print( words[i]+' & '+ alpha + ' & ' + net_words[i] + ' \\\\ ')
+        word_alpha_leven = word_alpha_leven + levenshtein(words[i], alpha)
+        word_net_leven = word_net_leven + levenshtein(words[i], net_words[i])
+        alpha_net_leven = alpha_net_leven + levenshtein(alpha , net_words[i])
+    print('Word-Alpha Sum:' + str(word_alpha_leven))
+    print('Word-Net Sum:' + str(word_net_leven))
+    print('Net-Alpha Sum:' + str(alpha_net_leven))
+    return embedd_graph, embedd_result , words
 
 
-def evaluate(graph, inputs):
-    result = graph.predict(inputs)
+def find_closest(word, lgram_model, embedd_graph, embedd_corpus ):
+    features = np.array([letters.word_to_feature(word, lgram_model)])
+    out = embedd_graph.predict(features)[0]
+    dists = []
+    for  a in embedd_corpus:
+        dists.append(scipy.spatial.distance.cosine(out , a))
+    return np.argsort(dists)
+
+
+
 
 
 def do_single_file_inference(input_file_path):
@@ -240,8 +277,25 @@ def train_model():
     create_flags()
     initialize_globals()
     # prepare_data()
-    train_and_test()
+    embedd_graph, embedd_result, words = train_and_test()
+    test_words = ['wheel' , 'buy', 'heart', 'please' , 'plug' , 'chareety']
+    index_model = letters.load_index('./data/lngrams.txt')
 
+    for tw in test_words:
+        neigh = find_closest(tw, index_model , embedd_graph, embedd_result)
+        #print (tw)
+        close_words = set()
+        index = 0
+        str = tw
+        while len(close_words) < 5:
+            if (words[neigh[index]] in close_words):
+                index = index + 1
+            else:
+                close_words.add(words[neigh[index]])
+                #print('\t' + words[neigh[index]])
+                str = str + ' & ' + words[neigh[index]]
+        print (str + '\\\\')
+        print('\\hline')
 
 if __name__ == '__main__':
     train_model()
